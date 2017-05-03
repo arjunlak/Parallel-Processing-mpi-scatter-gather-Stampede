@@ -1,0 +1,49 @@
+#include <mpi.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+int main(int cvalue, char **vvalue) 
+{
+    int size, rank;
+    MPI_Init(&cvalue, &vvalue);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    struct timeval tvBegin,tvEnd,tvDiff;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+    int *globalvar=NULL;
+    int localvar;
+
+    if (rank == 0) {
+        globalvar = malloc(size * sizeof(int) );
+        for (int i=0; i<size; i++)
+            globalvar[i] = 2*i+1;
+        gettimeofday(&tvBegin,NULL);
+        printf("%d  data on Processor : ", rank);
+        for (int i=0; i<size; i++)
+            printf("%d ", globalvar[i]);
+        printf("\n");
+    }
+
+    MPI_Send(globalvar, 1, MPI_INT, &localvar, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+    printf("Processor %d has data %d\n", rank, localvar);
+    MPI_Gather(&localvar, 1, MPI_INT, globalvar, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    gettimeofday(&tvEnd,NULL);
+   if(rank==0){
+    printf("The Point-to-point communication time is %f\n",(float)( (tvEnd.tv_usec-tvBegin.tv_usec)/100));
+}  
+ 
+ if (rank == 0) 
+ {
+        printf("Processor %d has data: ", rank);
+        for (int i=0; i<size; i++)
+            printf("%d ", globalvar[i]);
+        printf("\n");
+    }
+
+    if (rank == 0)
+        free(globalvar);
+
+    MPI_Finalize();
+    return 0;
+}
